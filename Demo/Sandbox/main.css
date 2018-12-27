@@ -1,0 +1,29 @@
+body {
+    display: grid;
+    justify-content: center;
+    align-content: center;
+    height: 100vh;
+
+    background: #303030;
+    /* background: black; */
+    color: white;
+    margin: 0;
+}
+
+h1 {
+    display: none;
+    grid-row: 1/2;
+    grid-column: 1/2;
+    align-self: center;
+    z-index: 100;
+
+    text-align: center;
+    font-family: arial;
+    
+    font-size: 5em;
+}
+
+canvas {
+    grid-row: 1/2;
+    grid-column: 1/2;
+}
