@@ -5,6 +5,7 @@ if (!gl) {
     throw new Error('WebGL not supported');
 }
 
+// F|L|B|R|T|U
 const vertexData = [
 
     // Front
@@ -56,9 +57,6 @@ const vertexData = [
     -.5, -.5, -.5,
 ];
 
-
-
-
 // Construct an Array by repeating `pattern` n times
 function repeat(n, pattern) {
     return [...Array(n)].reduce(sum => sum.concat(pattern), []);
@@ -74,6 +72,16 @@ const uvData = repeat(6, [
     0, 0  // bottom left
 ]);
 
+// F|L|B|R|T|U
+const normalData = [
+    ...repeat(6, [0, 0, 1]),    // Z+
+    ...repeat(6, [-1, 0, 0]),   // X-
+    ...repeat(6, [0, 0, -1]),   // Z-
+    ...repeat(6, [1, 0, 0]),    // X+
+    ...repeat(6, [0, 1, 0]),    // Y+
+    ...repeat(6, [0, -1, 0]),   // Y-
+]
+
 const positionBuffer = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexData), gl.STATIC_DRAW);
@@ -82,6 +90,9 @@ const uvBuffer = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvData), gl.STATIC_DRAW);
 
+const normalBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normalData), gl.STATIC_DRAW);
 
 // RESOURCE LOADING
 // ================
@@ -104,7 +115,7 @@ function loadTexture(url) {
 
 
 
-const brick = loadTexture(`textures/default_brick.png`);
+const brick = loadTexture(`textures/invent-box-logo-512px.jpg`);
 
 gl.activeTexture(gl.TEXTURE0);
 gl.bindTexture(gl.TEXTURE_2D, brick);
@@ -117,15 +128,28 @@ let uniformLocations;
     gl.shaderSource(vertexShader, `
     precision mediump float;
 
+    // point light
+    const vec3 lightDirection = normalize(vec3(0, 1.0, 1.0));
+    const float ambient = 0.1;
+
     attribute vec3 position;
     attribute vec2 uv;
+    attribute vec3 normal;
 
     varying vec2 vUV;
+    varying float vBrightness;
 
     uniform mat4 matrix;
+    uniform mat4 normalMatrix;
 
-    void main() {
+    void main() {        
+        vec3 worldNormal = (normalMatrix * vec4(normal, 1)).xyz;
+        float diffuse = max(0.0, dot(worldNormal, lightDirection));
+        float specular = diffuse * diffuse * diffuse * diffuse * 1.5f;
+
         vUV = uv;
+        vBrightness = ambient + specular;
+
         gl_Position = matrix * vec4(position, 1);
     }
     `);
@@ -136,10 +160,14 @@ let uniformLocations;
     precision mediump float;
 
     varying vec2 vUV;
+    varying float vBrightness;
+
     uniform sampler2D textureID;
 
     void main() {
-        gl_FragColor = texture2D(textureID, vUV);
+        vec4 texel = texture2D(textureID, vUV);
+        texel.xyz *= vBrightness;
+        gl_FragColor = texel;
     }
     `);
     gl.compileShader(fragmentShader);
@@ -161,11 +189,17 @@ let uniformLocations;
     gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
     gl.vertexAttribPointer(uvLocation, 2, gl.FLOAT, false, 0, 0);
 
+    const normalLocation = gl.getAttribLocation(program, `normal`);
+    gl.enableVertexAttribArray(normalLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
+
     gl.useProgram(program);
     gl.enable(gl.DEPTH_TEST);
 
     uniformLocations = {
         matrix: gl.getUniformLocation(program, `matrix`),
+        normalMatrix: gl.getUniformLocation(program, `normalMatrix`),
         textureID: gl.getUniformLocation(program, 'textureID'),
     };
 
@@ -191,6 +225,7 @@ const mvpMatrix = mat4.create();
 mat4.translate(viewMatrix, viewMatrix, [0, 0.1, 2]);
 mat4.invert(viewMatrix, viewMatrix);
 
+const normalMatrix = mat4.create();
 
 // ANIMATION LOOP
 // ==============
@@ -198,12 +233,18 @@ mat4.invert(viewMatrix, viewMatrix);
 function animate() {
     requestAnimationFrame(animate);
 
-    mat4.rotateX(modelMatrix, modelMatrix, Math.PI/60);
-    mat4.rotateY(modelMatrix, modelMatrix, Math.PI/160);
+    mat4.rotateX(modelMatrix, modelMatrix, Math.PI/100);
+    mat4.rotateY(modelMatrix, modelMatrix, Math.PI/200);
 
     mat4.multiply(mvMatrix, viewMatrix, modelMatrix);
     mat4.multiply(mvpMatrix, projectionMatrix, mvMatrix);
+
+    mat4.invert(normalMatrix, mvMatrix);
+    mat4.transpose(normalMatrix, normalMatrix);
+    
+    gl.uniformMatrix4fv(uniformLocations.normalMatrix, false, normalMatrix);
     gl.uniformMatrix4fv(uniformLocations.matrix, false, mvpMatrix);
+    
     gl.drawArrays(gl.TRIANGLES, 0, vertexData.length / 3);
 }
 
