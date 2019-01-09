@@ -1,3 +1,8 @@
+/*
+ * Title: Learn WebGL #11 - Lighting
+ * Author: Darius @ InventBox <inventboxtutorial@gmail.com>
+ */
+
 const canvas = document.querySelector('canvas');
 const gl = canvas.getContext('webgl');
 
@@ -125,7 +130,6 @@ let uniformLocations;
     gl.shaderSource(vertexShader, `
     precision mediump float;
 
-    // point light
     const vec3 lightDirection = normalize(vec3(0, 1.0, 1.0));
     const float ambient = 0.1;
 
@@ -225,8 +229,6 @@ const normalMatrix = mat4.create();
 
 // ANIMATION LOOP
 // ==============
-
-// mat4.rotateY(modelMatrix, modelMatrix, -1*Math.PI/2);
 
 function animate() {
     requestAnimationFrame(animate);
