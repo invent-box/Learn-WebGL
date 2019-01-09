@@ -32,13 +32,12 @@ const vertexData = [
     -.5, -.5, -.5,
     0.5, -.5, -.5,
 
-    // Right
     0.5, 0.5, -.5,
     0.5, -.5, -.5,
     0.5, 0.5, 0.5,
     0.5, 0.5, 0.5,
+    0.5, -.5, -0.5,
     0.5, -.5, 0.5,
-    0.5, -.5, -.5,
 
     // Top
     0.5, 0.5, 0.5,
@@ -113,8 +112,6 @@ function loadTexture(url) {
     return texture;
 }
 
-
-
 const brick = loadTexture(`textures/invent-box-logo-512px.jpg`);
 
 gl.activeTexture(gl.TEXTURE0);
@@ -145,10 +142,9 @@ let uniformLocations;
     void main() {        
         vec3 worldNormal = (normalMatrix * vec4(normal, 1)).xyz;
         float diffuse = max(0.0, dot(worldNormal, lightDirection));
-        float specular = diffuse * diffuse * diffuse * diffuse * 1.5f;
 
         vUV = uv;
-        vBrightness = ambient + specular;
+        vBrightness = ambient + diffuse;
 
         gl_Position = matrix * vec4(position, 1);
     }
@@ -229,6 +225,8 @@ const normalMatrix = mat4.create();
 
 // ANIMATION LOOP
 // ==============
+
+// mat4.rotateY(modelMatrix, modelMatrix, -1*Math.PI/2);
 
 function animate() {
     requestAnimationFrame(animate);
