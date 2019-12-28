@@ -21,4 +21,5 @@ void main() {
 
     mat4 mvp = projection_matrix * view_matrix * model_matrix;
     gl_Position = mvp * vec4(vertex_position, 1);
+    gl_PointSize = 1.0;
 }
