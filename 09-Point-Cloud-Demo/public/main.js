@@ -8,13 +8,15 @@ if (!gl) {
 function spherePointCloud(pointCount) {
     let points = [];
     for (let i = 0; i < pointCount; i++) {
-        const r = () => Math.random() - 0.5; // -.5 < x < 0.5
-        const inputPoint = [r(), r(), r()];
+        const r = 1;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(1 - 2 * Math.random());
+        const x = r * Math.sin(phi) * Math.cos(theta);
+        const y = r * Math.sin(phi) * Math.sin(theta);
+        const z = r * Math.cos(phi);
         
-        const outputPoint = vec3.normalize(vec3.create(), inputPoint);
-
+        const outputPoint = [ x, y, z ];
         points.push(...outputPoint);
-        
     }
 
     return points;
@@ -38,6 +40,7 @@ uniform mat4 matrix;
 void main() {
     vColor = vec3(position.xy, 1);
     gl_Position = matrix * vec4(position, 1);
+    gl_PointSize = 1.0;
 }
 `);
 gl.compileShader(vertexShader);
